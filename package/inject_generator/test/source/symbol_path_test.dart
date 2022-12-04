@@ -5,9 +5,9 @@ void main() {
   group('$SymbolPath', () {
     group('should prevent construction when', () {
       void assertThrowsArgumentError(
-          {String package: 'test',
-          String path: 'test.dart',
-          String symbol: 'Test'}) {
+          {String? package: 'test',
+          String? path: 'test.dart',
+          String? symbol: 'Test'}) {
         expect(
             () => new SymbolPath(package, path, symbol), throwsArgumentError);
       }

@@ -17,7 +17,7 @@ class LookupKey {
   /// Optional qualifier for the type.
   final Optional<SymbolPath> qualifier;
 
-  LookupKey(this.root, {SymbolPath qualifier})
+  LookupKey(this.root, {SymbolPath? qualifier})
       : this.qualifier = new Optional.fromNullable(qualifier);
 
   /// Returns a new instance from the JSON encoding of an instance.

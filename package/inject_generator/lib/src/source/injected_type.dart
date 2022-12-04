@@ -13,7 +13,7 @@ class InjectedType {
 
   /// True if the user is trying to inject [LookupKey] using a function type. If
   /// false, the user is trying to inject the type directly.
-  final bool isProvider;
+  final bool? isProvider;
 
   InjectedType(this.lookupKey, {this.isProvider = false});
 

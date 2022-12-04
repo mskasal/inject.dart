@@ -27,12 +27,12 @@ class InjectorGraphResolver {
   }
 
   Future<LibrarySummary> _readFromPath(SymbolPath p,
-      {@required SymbolPath requestedBy}) async {
+      {required SymbolPath requestedBy}) async {
     var _cachedSummary = _summaryCache[p];
     if (_cachedSummary != null) return _cachedSummary;
 
     var package = p.package;
-    var filePath = path.withoutExtension(p.path) + _librarySummaryExtension;
+    var filePath = path.withoutExtension(p.path!) + _librarySummaryExtension;
     try {
       return _summaryCache[p] = await _reader.read(package, filePath);
     } on AssetNotFoundException {
@@ -70,11 +70,11 @@ class InjectorGraphResolver {
     // For every module, load the corresponding library summary that should have
     // already been built in the dependency tree. We then lookup the specific
     // module summary from the library summary.
-    var modulesToLoad = _modules.map<Future<ModuleSummary>>((module) async {
+    var modulesToLoad = _modules.map<Future<ModuleSummary?>>((module) async {
       var moduleSummaries =
           (await _readFromPath(module, requestedBy: _injectorSummary.clazz))
               .modules;
-      return moduleSummaries.firstWhere((s) => s.clazz == module, orElse: () {
+      return moduleSummaries.firstWhere((s) => s!.clazz == module, orElse: () {
         // We're lenient to programming errors. It is possible that an injector
         // refers to a module for which we failed to produce a summary. So we
         // emit a warning but keep on trucking.
@@ -84,17 +84,17 @@ class InjectorGraphResolver {
         return null;
       });
     });
-    List<ModuleSummary> allModules =
-        (await Future.wait<ModuleSummary>(modulesToLoad))
-            .where((ModuleSummary s) => s != null)
+    List<ModuleSummary?> allModules =
+        (await Future.wait<ModuleSummary?>(modulesToLoad))
+            .whereNotNull()
             .toList();
 
     var providersByModules = <LookupKey, DependencyProvidedByModule>{};
 
     // We compute the providers by modules in two passes. The first pass finds
     // all keys that are explicitly provided.
-    for (ModuleSummary module in allModules) {
-      for (ProviderSummary provider in module.providers) {
+    for (ModuleSummary? module in allModules) {
+      for (ProviderSummary provider in module!.providers) {
         final lookupKey = _extractLookupKey(provider.injectedType);
         providersByModules[lookupKey] = new DependencyProvidedByModule._(
           lookupKey,
@@ -110,7 +110,7 @@ class InjectorGraphResolver {
     var injectables = <LookupKey, InjectableSummary>{};
 
     Future<Null> addInjectableIfExists(LookupKey key,
-        {@required SymbolPath requestedBy}) async {
+        {required SymbolPath requestedBy}) async {
       // Modules take precedence.
       bool isProvidedByAModule = providersByModules.containsKey(key);
       bool isSeen = injectables.containsKey(key);
@@ -136,8 +136,8 @@ class InjectorGraphResolver {
     // The second pass looks at all the dependencies for the providers, and if
     // that dependency isn't already met by a module, it satisfies the
     // dependency by using the type's injectable constructor.
-    for (ModuleSummary module in allModules) {
-      for (ProviderSummary provider in module.providers) {
+    for (ModuleSummary? module in allModules) {
+      for (ProviderSummary provider in module!.providers) {
         for (InjectedType dependency in provider.dependencies) {
           await addInjectableIfExists(dependency.lookupKey,
               requestedBy: module.clazz);
@@ -175,7 +175,7 @@ class InjectorGraphResolver {
     _detectAndWarnAboutCycles(mergedDependencies);
 
     return new InjectorGraph._(
-      new List<SymbolPath>.unmodifiable(allModules.map((m) => m.clazz)),
+      new List<SymbolPath>.unmodifiable(allModules.map((m) => m!.clazz)),
       new List<InjectorProvider>.unmodifiable(injectorProviders),
       new Map<LookupKey, ResolvedDependency>.unmodifiable(mergedDependencies),
     );
@@ -218,7 +218,7 @@ class InjectorGraphResolver {
         } else {
           Iterable<LookupKey> children = mergedDependencies[parent]
                   ?.dependencies
-                  ?.map((injectedType) => injectedType.lookupKey) ??
+                  .map((injectedType) => injectedType.lookupKey) ??
               const [];
           for (var child in children) {
             checkForCycles(child);
@@ -251,7 +251,7 @@ class DependencyEdge {
   /// The dependee node in the dependency graph.
   final LookupKey to;
 
-  DependencyEdge({@required this.from, @required this.to});
+  DependencyEdge({required this.from, required this.to});
 
   @override
   int get hashCode => hash2(from, to);
@@ -316,9 +316,9 @@ class Cycle {
 /// Since the DI graph can not be created with an unfulfilled dependency, this
 /// logs a severe error.
 void logUnresolvedDependency(
-    {@required InjectorSummary injectorSummary,
-    @required SymbolPath dependency,
-    @required SymbolPath requestedBy}) {
+    {required InjectorSummary injectorSummary,
+    required SymbolPath dependency,
+    required SymbolPath requestedBy}) {
   final injectorClassName = injectorSummary.clazz.symbol;
   final dependencyClassName = dependency.symbol;
   final requestedByClassName = requestedBy.symbol;

@@ -9,10 +9,6 @@
 import 'dart:async';
 import 'package:analyzer/dart/analysis/results.dart';
 
-// <TRANSITIONAL_API>
-import 'package:analyzer/src/dart/analysis/results.dart';
-// </TRANSITIONAL_API>
-
 import 'package:analyzer/dart/element/element.dart';
 import 'package:build/build.dart';
 import 'package:build/build.dart' as build show log;
@@ -46,7 +42,7 @@ BuilderContext get builderContext {
   if (context == null) {
     throw new StateError(
       'No current $BuilderContext is active. Start your build function using '
-          '"runInContext" to be able to use "builderContext"',
+      '"runInContext" to be able to use "builderContext"',
     );
   }
   return context;
@@ -55,7 +51,7 @@ BuilderContext get builderContext {
 /// Contains services related to the currently executing [BuildStep].
 class BuilderContext {
   /// The build step currently being processed.
-  final BuildStep buildStep;
+  final BuildStep? buildStep;
 
   /// A logger that provides source locations.
   ///
@@ -64,7 +60,7 @@ class BuilderContext {
   ///     Element sourceElement = ...;
   ///     builderContext.log.warning(sourceElement,
   ///         'is not expected at this location.');
-  final BuilderLogger log;
+  final BuilderLogger? log;
 
   BuilderContext._(BuildStep buildStep)
       : this.buildStep = buildStep,
@@ -101,11 +97,14 @@ class BuilderLogger {
 
   String _constructMessage(Element element, String message) {
     // <TRANSITIONAL_API>
-    ElementDeclarationResult elementDeclaration;
+    ElementDeclarationResult? elementDeclaration;
     if (element.kind != ElementKind.DYNAMIC) {
-      var parsedLibrary = ParsedLibraryResultImpl.tmp(element.library);
-      if (parsedLibrary.state == ResultState.VALID) {
-        elementDeclaration = parsedLibrary.getElementDeclaration(element);
+      // var parsedLibrary =  ParsedLibraryResultImpl.tmp(element.library);
+      var parsedLibrary =
+          element.library?.session.getParsedLibraryByElement(element.library!);
+      if (parsedLibrary is ResolvedLibraryResult) {
+        elementDeclaration = (parsedLibrary as ResolvedLibraryResult)
+            .getElementDeclaration(element);
       }
     }
     // </TRANSITIONAL_API>
@@ -116,8 +115,9 @@ class BuilderLogger {
       sourceLocation = 'at unknown source location:';
       source = '.';
     } else {
-      var offset = elementDeclaration.node.offset;
-      var location = elementDeclaration.parsedUnit.lineInfo.getLocation(offset);
+      var offset = elementDeclaration!.node.offset;
+      var location =
+          elementDeclaration.parsedUnit!.lineInfo.getLocation(offset);
       var code = elementDeclaration.node.toSource();
       sourceLocation = 'at $location:';
       source = ':\n\n$code';

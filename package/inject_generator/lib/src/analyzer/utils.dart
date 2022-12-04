@@ -11,29 +11,29 @@ import 'package:inject_generator/src/source/symbol_path.dart';
 
 /// Constructs a serializable path to [element].
 SymbolPath getSymbolPath(Element element) {
-  if (element is TypeDefiningElement && element.type.isDynamic) {
+  if (element is TypeDefiningElement && element.kind == ElementKind.DYNAMIC) {
     throw new ArgumentError('Dynamic element type not supported. This is a '
         'package:inject bug. Please report it.');
   }
   return new SymbolPath.fromAbsoluteUri(
-    element.library.source.uri,
+    element.library!.source.uri,
     element.name,
   );
 }
 
 /// Constructs a [InjectedType] from a [DartType].
-InjectedType getInjectedType(DartType type, {SymbolPath qualifier}) {
+InjectedType getInjectedType(DartType type, {SymbolPath? qualifier}) {
   if (type is FunctionType) {
     if (type.parameters.isNotEmpty) {
-      builderContext.log.severe(
-          type.element,
+      builderContext.log!.severe(
+          type.parameters.elementAt(0),
           'Only no-arg typedefs are supported, '
           'and no-arg typedefs are treated as providers of the return type. ');
       throw new ArgumentError();
     }
     if (type.returnType.isDynamic) {
-      builderContext.log.severe(
-          type.element,
+      builderContext.log!.severe(
+          type.parameters.elementAt(0),
           'Cannot create a provider of type dynamic. '
           'Your function type did not include a return type.');
       throw new ArgumentError();
@@ -47,29 +47,29 @@ InjectedType getInjectedType(DartType type, {SymbolPath qualifier}) {
       isProvider: false);
 }
 
-LookupKey _getLookupKey(DartType type, {SymbolPath qualifier}) =>
-    new LookupKey(getSymbolPath(type.element), qualifier: qualifier);
+LookupKey _getLookupKey(DartType type, {SymbolPath? qualifier}) =>
+    new LookupKey(getSymbolPath(type.element!), qualifier: qualifier);
 
 bool _hasAnnotation(Element element, SymbolPath annotationSymbol) {
   return _getAnnotation(element, annotationSymbol, orElse: () => null) != null;
 }
 
-ElementAnnotation _getAnnotation(Element element, SymbolPath annotationSymbol,
-    {ElementAnnotation orElse()}) {
+ElementAnnotation? _getAnnotation(Element element, SymbolPath annotationSymbol,
+    {ElementAnnotation? orElse()?}) {
   List<ElementAnnotation> resolvedMetadata = element.metadata;
 
   for (int i = 0; i < resolvedMetadata.length; i++) {
     ElementAnnotation annotation = resolvedMetadata[i];
-    Element valueElement = annotation.computeConstantValue()?.type?.element;
+    Element? valueElement = annotation.computeConstantValue()?.type?.element;
 
     if (valueElement == null) {
       String pathToAnnotation = annotationSymbol.toHumanReadableString();
-      builderContext.log.severe(
+      builderContext.log!.severe(
         annotation.element ?? element,
         'While looking for annotation ${pathToAnnotation} on "${element}", '
-            'failed to resolve annotation value. A common cause of this error is '
-            'a misspelling or a failure to resolve the import where the '
-            'annotation comes from.',
+        'failed to resolve annotation value. A common cause of this error is '
+        'a misspelling or a failure to resolve the import where the '
+        'annotation comes from.',
       );
     } else if (getSymbolPath(valueElement) == annotationSymbol) {
       return annotation;
@@ -104,7 +104,7 @@ bool isSingletonClass(ClassElement clazz) {
     if (hasProvideAnnotation(clazz)) {
       isSingleton = true;
     } else {
-      builderContext.log.severe(
+      builderContext.log!.severe(
           clazz,
           'A class cannot be annotated with `@singleton` '
           'without also being annotated `@provide`. '
@@ -117,7 +117,7 @@ bool isSingletonClass(ClassElement clazz) {
       if (hasProvideAnnotation(constructor)) {
         isSingleton = true;
       } else {
-        builderContext.log.severe(
+        builderContext.log!.severe(
             constructor,
             'A constructor cannot be annotated with `@Singleton()` '
             'without also being annotated `@Provide()`. '
@@ -152,8 +152,9 @@ bool hasQualifier(Element e) => _hasAnnotation(e, SymbolPath.qualifier);
 
 /// Returns a global key for the `@Qualifier` annotated method.
 SymbolPath extractQualifier(Element e) {
-  final metadata = _getAnnotation(e, SymbolPath.qualifier);
-  final key = metadata.computeConstantValue().getField('name').toSymbolValue();
+  final metadata = _getAnnotation(e, SymbolPath.qualifier)!;
+  final key =
+      metadata.computeConstantValue()!.getField('name')!.toSymbolValue();
   return new SymbolPath.global(key);
 }
 
@@ -165,5 +166,5 @@ bool hasInjectorAnnotation(Element e) => _hasAnnotation(e, SymbolPath.injector);
 /// Throws if the annotation is missing. It is assumed that the calling code
 /// already verified the existence of the annotation using
 /// [hasInjectorAnnotation].
-ElementAnnotation getInjectorAnnotation(Element e) =>
+ElementAnnotation? getInjectorAnnotation(Element e) =>
     _getAnnotation(e, SymbolPath.injector);

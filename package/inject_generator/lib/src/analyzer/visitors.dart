@@ -5,6 +5,7 @@
 import 'package:analyzer/dart/constant/value.dart';
 import 'package:analyzer/dart/element/element.dart';
 import 'package:analyzer/dart/element/visitor.dart';
+import 'package:collection/collection.dart' show IterableNullableExtension;
 import 'package:inject_generator/src/analyzer/utils.dart';
 import 'package:inject_generator/src/context.dart';
 import 'package:inject_generator/src/source/symbol_path.dart';
@@ -75,13 +76,13 @@ class _LibraryVisitor extends RecursiveElementVisitor<Null> {
         isInjectable ? 'injectable' : null,
         isModule ? 'module' : null,
         isInjector ? 'injector' : null,
-      ].where((t) => t != null);
+      ].whereNotNull();
 
-      builderContext.log.severe(
+      builderContext.log!.severe(
         element,
         'A class may be an injectable, a module or an injector, '
-            'but not more than one of these types. However class '
-            '${element.name} was found to be ${types.join(' and ')}',
+        'but not more than one of these types. However class '
+        '${element.name} was found to be ${types.join(' and ')}',
       );
       return null;
     }
@@ -94,7 +95,7 @@ class _LibraryVisitor extends RecursiveElementVisitor<Null> {
       bool asynchronous = hasAsynchronousAnnotation(element) ||
           element.constructors.any(hasAsynchronousAnnotation);
       if (asynchronous) {
-        builderContext.log.severe(
+        builderContext.log!.severe(
           element,
           'Classes and constructors cannot be annotated with @Asynchronous().',
         );
@@ -115,14 +116,14 @@ class _LibraryVisitor extends RecursiveElementVisitor<Null> {
 }
 
 List<SymbolPath> _extractModules(ClassElement clazz) {
-  ElementAnnotation annotation = getInjectorAnnotation(clazz);
-  List<DartObject> modules =
-      annotation.constantValue.getField('modules').toListValue();
+  ElementAnnotation annotation = getInjectorAnnotation(clazz)!;
+  List<DartObject>? modules =
+      annotation.computeConstantValue()?.getField('modules')?.toListValue();
   if (modules == null) {
     return const <SymbolPath>[];
   }
   return modules
-      .map((DartObject obj) => getSymbolPath(obj.toTypeValue().element))
+      .map((DartObject obj) => getSymbolPath(obj.toTypeValue()!.element!))
       .toList();
 }
 
@@ -140,8 +141,10 @@ abstract class InjectClassVisitor {
 
   /// Call to start visiting [clazz].
   void visitClass(ClassElement clazz) {
-    for (var supertype in clazz.allSupertypes.where((t) => !t.isObject)) {
-      new _AnnotatedClassVisitor(this).visitClassElement(supertype.element);
+    for (var supertype in clazz.allSupertypes.where(
+        (t) => !(t.element.name == 'Object' && t.element.library.isDartCore))) {
+      new _AnnotatedClassVisitor(this)
+          .visitClassElement(supertype.element as ClassElement);
     }
     new _AnnotatedClassVisitor(this).visitClassElement(clazz);
   }
@@ -160,7 +163,7 @@ abstract class InjectClassVisitor {
     MethodElement method,
     bool singleton,
     bool asynchronous, {
-    SymbolPath qualifier,
+    SymbolPath? qualifier,
   });
 
   /// Called when a getter is annotated with `@provide`.
@@ -196,11 +199,11 @@ class _AnnotatedClassVisitor extends GeneralizingElementVisitor<Null> {
 
   @override
   Null visitFieldElement(FieldElement field) {
-    if (_isProvider(field.getter)) {
+    if (_isProvider(field.getter!)) {
       bool singleton = hasSingletonAnnotation(field);
       bool asynchronous = hasAsynchronousAnnotation(field);
       if (asynchronous) {
-        builderContext.log.severe(
+        builderContext.log!.severe(
           field,
           'Getters cannot be annotated with @Asynchronous().',
         );

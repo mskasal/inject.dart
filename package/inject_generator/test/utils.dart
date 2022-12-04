@@ -6,8 +6,6 @@ import 'package:build_test/build_test.dart';
 import 'package:inject_generator/src/build/summary_builder.dart';
 import 'package:inject_generator/src/summary.dart';
 import 'package:logging/logging.dart';
-import 'package:matcher/matcher.dart';
-import 'package:meta/meta.dart';
 import 'package:test/test.dart';
 
 /// Tests that [buggyCode] produces the [expectedWarning].
@@ -23,8 +21,8 @@ import 'package:test/test.dart';
 ///     )
 void testShouldWarn(
   String description, {
-  @required String buggyCode,
-  @required String expectedWarning,
+  required String buggyCode,
+  required String expectedWarning,
 }) {
   test('should warn ${description}', () async {
     var tb = new SummaryTestBed(pkg: 'a', inputs: {
@@ -38,16 +36,16 @@ void testShouldWarn(
 
 /// Matches a [LogRecord] on its [level] and [message].
 Matcher logRecord(Level level, Pattern message) {
-  return new _LogRecordMatcher(level, message);
+  return new _LogRecordMatcher(level, message as String);
 }
 
 /// Makes testing the [InjectSummaryBuilder] convenient.
 class SummaryTestBed {
   /// Test package being processed by the summary builder.
-  final String pkg;
+  final String? pkg;
 
   /// Input files for the builder.
-  final Map<String, String> inputs;
+  final Map<String, String>? inputs;
 
   /// Log records written by the builder.
   final logRecords = <LogRecord>[];
@@ -97,13 +95,13 @@ class SummaryTestBed {
     final metadata = await reader.readAsString(
       new AssetId('inject', 'lib/inject.dart'),
     );
-    inputs.addAll({
+    inputs!.addAll({
       'inject|lib/inject.dart': metadata,
     });
     var builder = new InjectSummaryBuilder();
-    await testBuilder(builder, inputs,
+    await testBuilder(builder, inputs!,
         rootPackage: pkg,
-        isInput: (assetId) => assetId.startsWith(pkg),
+        isInput: (assetId) => assetId.startsWith(pkg!),
         onLog: logRecords.add,
         writer: _writer);
   }

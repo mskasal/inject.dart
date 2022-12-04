@@ -14,7 +14,7 @@ import 'package:test/test.dart';
 
 void main() {
   group('$InjectorGraphResolver', () {
-    FakeSummaryReader reader;
+    late FakeSummaryReader reader;
 
     setUp(() {
       reader = new FakeSummaryReader({
@@ -169,10 +169,10 @@ class _FakeBuilderContext implements BuilderContext {
   }
 
   @override
-  BuildStep get buildStep => null;
+  BuildStep? get buildStep => null;
 
   @override
-  BuilderLogger get log => null;
+  BuilderLogger? get log => null;
 }
 
 /// An in-memory implementation of [SummaryReader].
@@ -190,7 +190,7 @@ class FakeSummaryReader implements SummaryReader {
   FakeSummaryReader(this._summaries);
 
   @override
-  Future<LibrarySummary> read(String package, String path) {
+  Future<LibrarySummary> read(String? package, String path) {
     var fullPath = '$package/$path';
     var summary = _summaries[fullPath];
     if (summary == null) {

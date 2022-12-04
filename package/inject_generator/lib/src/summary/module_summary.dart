@@ -13,11 +13,7 @@ class ModuleSummary {
   final List<ProviderSummary> providers;
 
   /// Create a new summary of a module [clazz] of [providers].
-  factory ModuleSummary(SymbolPath clazz, List<ProviderSummary> providers) {
-    if (clazz == null) {
-      throw new ArgumentError.notNull('clazz');
-    }
-
+  factory ModuleSummary(SymbolPath clazz, List<ProviderSummary>? providers) {
     if (providers == null || providers.isEmpty) {
       throw new ArgumentError.value(
           providers, 'providers', 'Must not be null or empty.');
