@@ -124,9 +124,19 @@ void main() {
           ctx.records.any((r) =>
               r.level == Level.SEVERE &&
               r.message.contains(
-                  'Unable to locate metadata about Foo defined in asset:foo/missing.dart') &&
+                  'Could not find a way to provide "Foo" for injector "FooInjector" which is injected in "FooInjector"') &&
               r.message.contains(
-                  'This dependency is requested by FooInjector defined in asset:foo/foo.dart.')),
+                  'To fix this, check that at least one of the following is true:') &&
+              r.message.contains(
+                  "Ensure that Foo's class declaration or constructor is annotated with @provide.") &&
+              r.message.contains(
+                  'Ensure FooInjector contains a module that provides Foo.') &&
+              r.message
+                  .contains('Injector (FooInjector): asset:foo/foo.dart.') &&
+              r.message
+                  .contains('Injected class (Foo): asset:foo/missing.dart.') &&
+              r.message.contains(
+                  'Injected in class (FooInjector): asset:foo/foo.dart.')),
           isTrue);
     });
   }, skip: 'Currently not working with the extenral build system');

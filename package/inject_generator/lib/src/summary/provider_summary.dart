@@ -73,7 +73,7 @@ class ProviderSummary {
     InjectedType injectedType,
     String? name,
     ProviderKind kind, {
-    List<InjectedType>? dependencies: const [],
+    List<InjectedType?>? dependencies: const [],
     bool? singleton: false,
     bool asynchronous: false,
   }) {

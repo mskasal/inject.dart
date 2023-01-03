@@ -2,10 +2,11 @@ name: inject.example.train
 description: A more complex example of using package:inject
 
 environment:
-  sdk: '>=2.0.0 <3.0.0'
+  sdk: '>=2.18.0 <3.0.0'
 
 dependencies:
   inject:
+    version: ^1.0.1-alpha
     path: ../../package/inject
 
 dev_dependencies:

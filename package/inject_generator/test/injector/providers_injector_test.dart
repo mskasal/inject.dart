@@ -64,15 +64,15 @@ class Counter {
 // Tests for providers.
 void main() {
   group(ProvidersInjector, () {
-    ProvidersInjector? injector;
+    late ProvidersInjector injector;
 
     setUp(() async {
       injector = await ProvidersInjector.create(new CounterModule());
     });
 
     test('provider from injector', () async {
-      final counter1 = injector!.counter();
-      final counter2 = injector!.counter();
+      final counter1 = injector.counter();
+      final counter2 = injector.counter();
       counter1.increment();
 
       expect(counter1.value, 1);
@@ -80,7 +80,7 @@ void main() {
     });
 
     test('provider injected in class', () async {
-      final counterFactory = injector!.counterFactory;
+      final counterFactory = injector.counterFactory;
       final counter1 = counterFactory.create();
       final counter2 = counterFactory.create();
       counter1.increment();
@@ -90,7 +90,7 @@ void main() {
     });
 
     test('provider in module method', () async {
-      final counterFactory = injector!.counterFactory;
+      final counterFactory = injector.counterFactory;
       final counter1 = counterFactory.create();
       final counter2 = counterFactory.create();
       counter1.increment();

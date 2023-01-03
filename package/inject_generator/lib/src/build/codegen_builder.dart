@@ -15,7 +15,6 @@ import 'package:inject_generator/src/source/injected_type.dart';
 import 'package:inject_generator/src/source/lookup_key.dart';
 import 'package:inject_generator/src/source/symbol_path.dart';
 import 'package:inject_generator/src/summary.dart';
-import 'package:meta/meta.dart' hide literal;
 
 /// Generates code for a dependency injection-aware library.
 class InjectCodegenBuilder extends AbstractInjectBuilder {
@@ -81,9 +80,9 @@ class _AssetSummaryReader implements SummaryReader {
   const _AssetSummaryReader(this._buildStep);
 
   @override
-  Future<LibrarySummary> read(String package, String path) {
+  Future<LibrarySummary> read(String? package, String path) {
     return _buildStep
-        .readAsString(new AssetId(package, path))
+        .readAsString(new AssetId(package!, path))
         .then(jsonDecode)
         .then((json) => LibrarySummary.parseJson(json));
   }
@@ -94,8 +93,8 @@ class _Variable {
   final Reference type;
 
   const _Variable({
-    @required this.name,
-    @required this.type,
+    required this.name,
+    required this.type,
   });
 }
 
@@ -152,7 +151,7 @@ class _InjectorBuilder {
   ) {
     final concreteName = '${summary.clazz.symbol}\$Injector';
     final injectorType = refer(
-      summary.clazz.symbol,
+      summary.clazz.symbol!,
       summary.clazz.toDartUri(relativeTo: libraryUri).toString(),
     );
     final concreteInjectorType = refer(concreteName);
@@ -203,7 +202,7 @@ class _InjectorBuilder {
         final moduleVariable = moduleVariables[moduleSymbol];
         injectorCreator.requiredParameters.add(new Parameter(
           (b) => b
-            ..name = moduleVariable.name
+            ..name = moduleVariable!.name
             ..type = moduleVariable.type,
         ));
       } else {
@@ -252,7 +251,7 @@ class _InjectorBuilder {
       // Already generated.
       return;
     }
-    final paramName = _decapitalize(m.symbol);
+    final paramName = _decapitalize(m.symbol!);
     final fieldName = '_$paramName';
     final moduleType = _reference(m);
     fields.add(new FieldBuilder()
@@ -271,9 +270,9 @@ class _InjectorBuilder {
   // _create method if necessary; OR, returns a method reference if [dependency]
   // is a provider.
   Expression _invokeCreateMethod({
-    @required InjectedType dependency,
-    @required String scope,
-    @required SymbolPath requestedBy,
+    required InjectedType dependency,
+    required String scope,
+    required SymbolPath requestedBy,
   }) {
     if (!graph.mergedDependencies.containsKey(dependency.lookupKey)) {
       logUnresolvedDependency(
@@ -282,18 +281,20 @@ class _InjectorBuilder {
           requestedBy: requestedBy);
       return literalNull;
     }
-    _generateCreateMethod(graph.mergedDependencies[dependency.lookupKey]);
+    _generateCreateMethod(graph.mergedDependencies[dependency.lookupKey]!);
     final creatorMethod = _creatorMethodReference(dependency.lookupKey, scope);
-    return dependency.isProvider ? creatorMethod : creatorMethod.call(const []);
+    return dependency.isProvider!
+        ? creatorMethod
+        : creatorMethod.call(const []);
   }
 
   // TODO(alanrussian): Consider refactoring this so that we add an incrementing
   // number on each unique name to prevent collisions.
   static String _lookupKeyName(LookupKey key) {
     final qualifier = key.qualifier
-        .transform((symbolPath) => _camelCase(symbolPath.symbol))
+        .transform((symbolPath) => _camelCase(symbolPath.symbol!))
         .or('');
-    final root = _camelCase(key.root.symbol);
+    final root = _camelCase(key.root.symbol!);
     return '$qualifier$root';
   }
 
@@ -314,13 +315,14 @@ class _InjectorBuilder {
 
   void _generateCreateMethod(ResolvedDependency dependency) {
     final key = dependency.lookupKey;
-    if (creatorMethods.containsKey(key)) {
+    if (creatorMethods.containsKey(key) ||
+        creatorMethods[key]?.name == 'Null') {
       // Already generated.
       return;
     }
 
     // Reserve the slot to prevent cycles.
-    creatorMethods[key] = null;
+    creatorMethods[key] = MethodBuilder()..name = 'Null';
 
     if (dependency is DependencyProvidedByModule) {
       _generateModuleField(dependency.moduleClass);
@@ -368,7 +370,7 @@ class _InjectorBuilder {
     Expression dependencyExpression;
     if (dependency is DependencyProvidedByModule) {
       final callExpression = '${prefix}_' +
-          _decapitalize(dependency.moduleClass.symbol) +
+          _decapitalize(dependency.moduleClass.symbol!) +
           '.' +
           dependency.methodName;
       dependencyExpression = refer(callExpression).call(
@@ -381,14 +383,11 @@ class _InjectorBuilder {
       );
     } else if (dependency is DependencyProvidedByInjectable) {
       final type = refer(
-        dependency.summary.clazz.symbol,
+        dependency.summary.clazz.symbol!,
         dependency.summary.clazz.toDartUri(relativeTo: libraryUri).toString(),
       );
       var constructorName = dependency.summary.constructor.name;
-      if (constructorName.isEmpty) {
-        // TODO(https://github.com/dart-lang/code_builder/issues/83)
-        constructorName = null;
-      }
+
       dependencyExpression = type.newInstanceNamed(
         constructorName,
         dependency.dependencies
@@ -412,7 +411,7 @@ class _InjectorBuilder {
     }
     _visitedPreInstantiations.add(dep.lookupKey);
     for (final depDep in dep.dependencies) {
-      _preInstantiateDependency(graph.mergedDependencies[depDep.lookupKey]);
+      _preInstantiateDependency(graph.mergedDependencies[depDep.lookupKey]!);
     }
 
     // Then instantiate.
@@ -435,7 +434,7 @@ class _InjectorBuilder {
 
   Reference _referenceForType(InjectedType injectedType) {
     final keyReference = _referenceForKey(injectedType.lookupKey);
-    if (injectedType.isProvider) {
+    if (injectedType.isProvider!) {
       return new FunctionType(
           (functionType) => functionType..returnType = keyReference);
     }
@@ -446,7 +445,7 @@ class _InjectorBuilder {
     return _reference(key.root);
   }
 
-  Reference _reference(SymbolPath symbolPath) => refer(symbolPath.symbol,
+  Reference _reference(SymbolPath symbolPath) => refer(symbolPath.symbol!,
       symbolPath.toDartUri(relativeTo: libraryUri).toString());
 }
 

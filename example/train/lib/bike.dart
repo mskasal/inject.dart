@@ -3,7 +3,7 @@ import 'package:inject/inject.dart';
 import 'common.dart';
 
 /// Provides the service locator to the bike car feature code.
-BikeServiceLocator bikeServices;
+late BikeServiceLocator bikeServices;
 
 /// Declares dependencies used by the bike car.
 abstract class BikeServiceLocator {

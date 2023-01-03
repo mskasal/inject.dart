@@ -91,8 +91,8 @@ class BuilderLogger {
   }
 
   /// Logs a warning adding [element]'s source information to the message.
-  void severe(Element element, String message) {
-    builderContext.rawLogger.severe(_constructMessage(element, message));
+  void severe(Element? element, String message) {
+    builderContext.rawLogger.severe(_constructMessage(element!, message));
   }
 
   String _constructMessage(Element element, String message) {

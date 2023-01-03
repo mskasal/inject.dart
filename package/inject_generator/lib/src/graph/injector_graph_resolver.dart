@@ -74,17 +74,21 @@ class InjectorGraphResolver {
       var moduleSummaries =
           (await _readFromPath(module, requestedBy: _injectorSummary.clazz))
               .modules;
-      return moduleSummaries.firstWhere((s) => s!.clazz == module, orElse: () {
-        // We're lenient to programming errors. It is possible that an injector
-        // refers to a module for which we failed to produce a summary. So we
-        // emit a warning but keep on trucking.
-        builderContext.rawLogger.severe(
-            'Failed to locate summary for module ${module.toAbsoluteUri()} ',
-            'specified in injector ${_injectorSummary.clazz.symbol}.');
-        return null;
+      return moduleSummaries.firstWhere((s) {
+        if (s == null) {
+          // We're lenient to programming errors. It is possible that an injector
+          // refers to a module for which we failed to produce a summary. So we
+          // emit a warning but keep on trucking.
+          builderContext.rawLogger.severe(
+              'Failed to locate summary for module ${module.toAbsoluteUri()} ',
+              'specified in injector ${_injectorSummary.clazz.symbol}.');
+        }
+
+        return s != null && s.clazz == module;
       });
     });
-    List<ModuleSummary?> allModules =
+
+    List<ModuleSummary> allModules =
         (await Future.wait<ModuleSummary?>(modulesToLoad))
             .whereNotNull()
             .toList();
@@ -175,7 +179,7 @@ class InjectorGraphResolver {
     _detectAndWarnAboutCycles(mergedDependencies);
 
     return new InjectorGraph._(
-      new List<SymbolPath>.unmodifiable(allModules.map((m) => m!.clazz)),
+      new List<SymbolPath>.unmodifiable(allModules.map((m) => m.clazz)),
       new List<InjectorProvider>.unmodifiable(injectorProviders),
       new Map<LookupKey, ResolvedDependency>.unmodifiable(mergedDependencies),
     );

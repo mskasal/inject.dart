@@ -5,7 +5,7 @@ description: Dev-time dependency for package:inject.
 homepage: https://pub.dartlang.org/packages/inject
 
 environment:
-  sdk: '>=2.12.0 <3.0.0'
+  sdk: '>=2.18.0 <3.0.0'
 
 dependencies:
   analyzer: ^5.2.0
@@ -23,5 +23,6 @@ dev_dependencies:
   build_runner: ^2.3.2
   build_test: ^2.1.5
   inject:
+    version: ^1.0.1-alpha
     path: ../inject
   test: ^1.5.0

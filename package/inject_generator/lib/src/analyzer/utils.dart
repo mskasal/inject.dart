@@ -51,11 +51,14 @@ LookupKey _getLookupKey(DartType type, {SymbolPath? qualifier}) =>
     new LookupKey(getSymbolPath(type.element!), qualifier: qualifier);
 
 bool _hasAnnotation(Element element, SymbolPath annotationSymbol) {
-  return _getAnnotation(element, annotationSymbol, orElse: () => null) != null;
+  return _getAnnotation(element, annotationSymbol, orElse: () {
+        return;
+      }) !=
+      null;
 }
 
 ElementAnnotation? _getAnnotation(Element element, SymbolPath annotationSymbol,
-    {ElementAnnotation? orElse()?}) {
+    {required dynamic orElse(), bool throwOnMissing = false}) {
   List<ElementAnnotation> resolvedMetadata = element.metadata;
 
   for (int i = 0; i < resolvedMetadata.length; i++) {
@@ -76,9 +79,9 @@ ElementAnnotation? _getAnnotation(Element element, SymbolPath annotationSymbol,
     }
   }
 
-  return orElse != null
-      ? orElse()
-      : throw 'Annotation $annotationSymbol not found on element $element';
+  return throwOnMissing
+      ? throw 'Annotation $annotationSymbol not found on element $element'
+      : orElse();
 }
 
 /// Determines if [clazz] is an injectable class.
@@ -152,7 +155,8 @@ bool hasQualifier(Element e) => _hasAnnotation(e, SymbolPath.qualifier);
 
 /// Returns a global key for the `@Qualifier` annotated method.
 SymbolPath extractQualifier(Element e) {
-  final metadata = _getAnnotation(e, SymbolPath.qualifier)!;
+  final metadata = _getAnnotation(e, SymbolPath.qualifier,
+      orElse: () => null, throwOnMissing: true)!;
   final key =
       metadata.computeConstantValue()!.getField('name')!.toSymbolValue();
   return new SymbolPath.global(key);
@@ -167,4 +171,5 @@ bool hasInjectorAnnotation(Element e) => _hasAnnotation(e, SymbolPath.injector);
 /// already verified the existence of the annotation using
 /// [hasInjectorAnnotation].
 ElementAnnotation? getInjectorAnnotation(Element e) =>
-    _getAnnotation(e, SymbolPath.injector);
+    _getAnnotation(e, SymbolPath.injector,
+        orElse: () => null, throwOnMissing: true);

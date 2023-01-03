@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:inject.example.coffee/src/coffee_maker.dart';
+import 'package:inject.example.coffee/src/drip_coffee_module.dart';
+import 'package:inject.example.coffee/src/electric_heater.dart';
+import 'package:inject.example.coffee/src/heater.dart';
 import 'package:inject/inject.dart';
 import 'package:test/test.dart';
-
-import 'package:inject.example.coffee/coffee_app.dart';
 
 import 'coffee_app_test.inject.dart' as gen;
 
@@ -69,7 +71,7 @@ abstract class TestCoffee {
 }
 
 /// Forwards [print] messages to [_printLog].
-Function _interceptPrint(testFn()) {
+dynamic _interceptPrint(testFn()) {
   return () {
     return Zone.current.fork(specification: new ZoneSpecification(
       print: (_, __, ___, String message) {
